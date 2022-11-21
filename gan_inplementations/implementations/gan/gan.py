@@ -1,10 +1,12 @@
 import argparse
-import os
+import os, sys
 import numpy as np
 import math
 
 import torchvision.transforms as transforms
 from torchvision.utils import save_image
+sys.path.insert(1, '/content/pgm-project')
+from utils import *
 
 from torch.utils.data import DataLoader
 from torchvision import datasets
@@ -17,20 +19,20 @@ import torch
 os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
+parser.add_argument("--n_epochs", type=int, default=1000, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=64, help="size of the batches")
-parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
+parser.add_argument("--lr", type=float, default=0.02, help="adam: learning rate")
 parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
-parser.add_argument("--latent_dim", type=int, default=100, help="dimensionality of the latent space")
-parser.add_argument("--img_size", type=int, default=28, help="size of each image dimension")
+parser.add_argument("--latent_dim", type=int, default=1, help="dimensionality of the latent space")
+parser.add_argument("--img_size", type=int, default=2, help="size of each image dimension")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
-parser.add_argument("--sample_interval", type=int, default=400, help="interval betwen image samples")
+parser.add_argument("--sample_interval", type=int, default=700, help="interval betwen image samples")
 opt = parser.parse_args()
 print(opt)
 
-img_shape = (opt.channels, opt.img_size, opt.img_size)
+img_shape = (opt.channels, opt.img_size)
 
 cuda = True if torch.cuda.is_available() else False
 
@@ -49,7 +51,8 @@ class Generator(nn.Module):
         self.model = nn.Sequential(
             *block(opt.latent_dim, 2, normalize=False),
             nn.Linear(2, int(np.prod(img_shape))),
-            nn.Tanh()
+            nn.Sigmoid(),
+            nn.Linear(2, int(np.prod(img_shape))),
         )
 
     def forward(self, z):
@@ -87,20 +90,20 @@ if cuda:
     discriminator.cuda()
     adversarial_loss.cuda()
 
-# Configure data loader
-os.makedirs("../../data/mnist", exist_ok=True)
-dataloader = torch.utils.data.DataLoader(
-    datasets.MNIST(
-        "../../data/mnist",
-        train=True,
-        download=True,
-        transform=transforms.Compose(
-            [transforms.Resize(opt.img_size), transforms.ToTensor(), transforms.Normalize([0.5], [0.5])]
-        ),
-    ),
-    batch_size=opt.batch_size,
-    shuffle=True,
-)
+# # Configure data loader
+# os.makedirs("../../data/mnist", exist_ok=True)
+# dataloader = torch.utils.data.DataLoader(
+#     datasets.MNIST(
+#         "../../data/mnist",
+#         train=True,
+#         download=True,
+#         transform=transforms.Compose(
+#             [transforms.Resize(opt.img_size), transforms.ToTensor(), transforms.Normalize([0.5], [0.5])]
+#         ),
+#     ),
+#     batch_size=opt.batch_size,
+#     shuffle=True,
+# )
 
 # Optimizers
 optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
@@ -111,10 +114,14 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 # ----------
 #  Training
 # ----------
+dataset = two_gaussians()
+np.random.shuffle(dataset)
+num_batches = dataset.shape[0]//opt.batch_size
+dataset = dataset[:num_batches*opt.batch_size,:].reshape(num_batches, opt.batch_size, 1, 2)
+dataset = torch.Tensor(dataset)
 
 for epoch in range(opt.n_epochs):
-    for i, (imgs, _) in enumerate(dataloader):
-
+    for i, imgs in enumerate(dataset):
         # Adversarial ground truths
         valid = Variable(Tensor(imgs.size(0), 1).fill_(1.0), requires_grad=False)
         fake = Variable(Tensor(imgs.size(0), 1).fill_(0.0), requires_grad=False)
@@ -154,11 +161,12 @@ for epoch in range(opt.n_epochs):
         d_loss.backward()
         optimizer_D.step()
 
-        print(
-            "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-            % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
-        )
+        # print(
+        #     "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
+        #     % (epoch, opt.n_epochs, i, len(dataset), d_loss.item(), g_loss.item())
+        # )
 
-        batches_done = epoch * len(dataloader) + i
+        batches_done = epoch * len(dataset) + i
         if batches_done % opt.sample_interval == 0:
-            save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+            print(batches_done)
+            save_scatter_plot(dataset, gen_imgs[:, 0, 0].detach().numpy(), gen_imgs[:, 0, 1].detach().numpy(), "images/%d.png" % batches_done)
