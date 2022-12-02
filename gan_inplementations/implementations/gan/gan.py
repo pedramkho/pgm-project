@@ -21,7 +21,7 @@ os.makedirs("images", exist_ok=True)
 parser = argparse.ArgumentParser()
 parser.add_argument("--n_epochs", type=int, default=1000, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=64, help="size of the batches")
-parser.add_argument("--lr", type=float, default=0.02, help="adam: learning rate")
+parser.add_argument("--lr", type=float, default=1e-4, help="adam: learning rate")
 parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
@@ -48,11 +48,13 @@ class Generator(nn.Module):
             layers.append(nn.LeakyReLU(0.2, inplace=True))
             return layers
 
+
         self.model = nn.Sequential(
-            *block(opt.latent_dim, 2, normalize=False),
-            nn.Linear(2, int(np.prod(img_shape))),
-            nn.Sigmoid(),
-            nn.Linear(2, int(np.prod(img_shape))),
+            *block(opt.latent_dim, 128, normalize=False),
+            nn.Tanh(),
+            nn.Linear(128, 128),
+            nn.Tanh(),
+            nn.Linear(128, int(np.prod(img_shape))),
         )
 
     def forward(self, z):
@@ -66,8 +68,11 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
 
         self.model = nn.Sequential(
-            nn.Linear(int(np.prod(img_shape)), 2),
-            nn.Linear(2, 1),
+            nn.Linear(int(np.prod(img_shape)), 128),
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, 1),
             nn.Sigmoid(),
         )
 
@@ -114,12 +119,14 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 # ----------
 #  Training
 # ----------
-dataset = two_gaussians()
+dataset = eight_gaussians()
 np.random.shuffle(dataset)
+original_dataset = dataset.copy()
 num_batches = dataset.shape[0]//opt.batch_size
 dataset = dataset[:num_batches*opt.batch_size,:].reshape(num_batches, opt.batch_size, 1, 2)
 dataset = torch.Tensor(dataset)
 
+samples = []
 for epoch in range(opt.n_epochs):
     for i, imgs in enumerate(dataset):
         # Adversarial ground truths
@@ -137,9 +144,13 @@ for epoch in range(opt.n_epochs):
 
         # Sample noise as generator input
         z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
+        z_0 = Variable(Tensor(np.random.normal(0, 1, (264, opt.latent_dim))))
+        # print(z.shape)
+        # assert(0)
 
         # Generate a batch of images
         gen_imgs = generator(z)
+        gen_imgs_0 = generator(z_0)
 
         # Loss measures generator's ability to fool the discriminator
         g_loss = adversarial_loss(discriminator(gen_imgs), valid)
@@ -166,7 +177,10 @@ for epoch in range(opt.n_epochs):
         #     % (epoch, opt.n_epochs, i, len(dataset), d_loss.item(), g_loss.item())
         # )
 
-        batches_done = epoch * len(dataset) + i
-        if batches_done % opt.sample_interval == 0:
-            print(batches_done)
-            save_scatter_plot(dataset, gen_imgs[:, 0, 0].detach().numpy(), gen_imgs[:, 0, 1].detach().numpy(), "images/%d.png" % batches_done)
+    batches_done = epoch# * len(dataset) + i
+    if (batches_done) % opt.sample_interval == 0:
+        samples += [gen_imgs_0[:, 0, :].detach().numpy()]
+        save_scatter_plot(original_dataset[:500], gen_imgs_0[:, 0, 0].detach().numpy(), gen_imgs_0[:, 0, 1].detach().numpy(), "images/%d.png" % batches_done)
+# print(batches_done)
+plot_samples(samples, 'full_process')
+plot_samples([original_dataset[:3000]], 'original')
