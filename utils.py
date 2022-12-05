@@ -4,28 +4,29 @@ import numpy as np
 import seaborn as sns
 import seaborn
 
-def plot_samples(samples, title):
-    xmax = 7
+def plot_samples(samples, title, color='Greens'):
+    xmax = 3
     cols = len(samples)
-    bg_color  = seaborn.color_palette('Greens', n_colors=256)[0]
+    bg_color  = seaborn.color_palette(color, n_colors=256)[0]
     plt.figure(figsize=(2*cols, 2))
     for i, samps in enumerate(samples):
         if i == 0:
             ax = plt.subplot(1, cols, 1)
         else:
             plt.subplot(1, cols, i+1, sharex=ax, sharey=ax)
-        ax2 = seaborn.kdeplot(samps[:, 0], samps[:, 1], shaded=True, cmap='Greens', n_levels=15, clip=[[-xmax,xmax]]*2)
+        ax2 = seaborn.kdeplot(samps[:, 0], samps[:, 1], shaded=True, cmap=color, n_levels=15, clip=[[-xmax,xmax]]*2)
         plt.xticks([])
         plt.yticks([])
+        
     
     # ax.set_ylabel('epochs')
     plt.gcf().tight_layout()
-    plt.savefig(title+'.png')
+    plt.savefig(title+'.png', dpi=300)
     plt.show()
     plt.close()
 
 def save_scatter_plot(data, x, y, address):
-    sns.set_theme()
+    # sns.set_theme()
 
     s = [0.5 for _ in range(x.shape[0])]
     plt.scatter(data[:, 0], data[:, 1], c='r', marker='o', alpha=0.5)
@@ -38,7 +39,7 @@ def save_scatter_plot(data, x, y, address):
     plt.savefig(address, dpi=300)
     plt.clf()
 
-def eight_gaussians(mean_scale: float = 1.5, cov_scale: float = 0.01, size: int = 264):
+def eight_gaussians(mean_scale: float = 2.0, cov_scale: float = 0.02, size: int = 264):
     num_gaussians = 8
     # Initiate centers of 8 points on the circle with radius 1
     centers = [
@@ -67,7 +68,7 @@ def eight_gaussians(mean_scale: float = 1.5, cov_scale: float = 0.01, size: int 
     return dataset
 
 
-def two_gaussians(mean_scale: float = 5., cov_scale: float = 0.2, sizes: list = [264, 264]):
+def two_gaussians(mean_scale: float = 2.0, cov_scale: float = 0.02, sizes: list = [4 * 64, 64 * 10]):
     num_gaussians = 2
     # Initiate centers of 2 points on the circle with radius 1
 

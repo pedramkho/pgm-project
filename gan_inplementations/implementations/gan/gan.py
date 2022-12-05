@@ -119,7 +119,7 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 # ----------
 #  Training
 # ----------
-dataset = eight_gaussians()
+dataset = two_gaussians()
 np.random.shuffle(dataset)
 original_dataset = dataset.copy()
 num_batches = dataset.shape[0]//opt.batch_size
@@ -178,9 +178,8 @@ for epoch in range(opt.n_epochs):
         # )
 
     batches_done = epoch# * len(dataset) + i
-    if (batches_done) % opt.sample_interval == 0:
+    if (batches_done+1) % opt.sample_interval == 0:
         samples += [gen_imgs_0[:, 0, :].detach().numpy()]
         save_scatter_plot(original_dataset[:500], gen_imgs_0[:, 0, 0].detach().numpy(), gen_imgs_0[:, 0, 1].detach().numpy(), "images/%d.png" % batches_done)
 # print(batches_done)
-plot_samples(samples, 'full_process')
-plot_samples([original_dataset[:3000]], 'original')
+plot_samples(samples+[original_dataset[:]], 'full_process')
