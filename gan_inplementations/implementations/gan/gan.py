@@ -21,6 +21,7 @@ os.makedirs("images", exist_ok=True)
 parser = argparse.ArgumentParser()
 parser.add_argument("--n_epochs", type=int, default=1000, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=64, help="size of the batches")
+parser.add_argument("--data", default='gaussian', choices=['gaussian', 'mnist'], help="dataset")
 parser.add_argument("--lr", type=float, default=1e-4, help="adam: learning rate")
 parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
@@ -95,6 +96,20 @@ if cuda:
     discriminator.cuda()
     adversarial_loss.cuda()
 
+
+
+# -------------
+#  Data Loader
+# -------------
+if opt.data == 'gaussian':
+    dataset = two_gaussians()
+    np.random.shuffle(dataset)
+    original_dataset = dataset.copy()
+    num_batches = dataset.shape[0]//opt.batch_size
+    dataset = dataset[:num_batches*opt.batch_size,:].reshape(num_batches, opt.batch_size, 1, 2)
+    dataset = torch.Tensor(dataset)
+else:
+    assert(0)
 # # Configure data loader
 # os.makedirs("../../data/mnist", exist_ok=True)
 # dataloader = torch.utils.data.DataLoader(
@@ -119,13 +134,6 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 # ----------
 #  Training
 # ----------
-dataset = two_gaussians()
-np.random.shuffle(dataset)
-original_dataset = dataset.copy()
-num_batches = dataset.shape[0]//opt.batch_size
-dataset = dataset[:num_batches*opt.batch_size,:].reshape(num_batches, opt.batch_size, 1, 2)
-dataset = torch.Tensor(dataset)
-
 samples = []
 for epoch in range(opt.n_epochs):
     for i, imgs in enumerate(dataset):
@@ -145,8 +153,6 @@ for epoch in range(opt.n_epochs):
         # Sample noise as generator input
         z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
         z_0 = Variable(Tensor(np.random.normal(0, 1, (264, opt.latent_dim))))
-        # print(z.shape)
-        # assert(0)
 
         # Generate a batch of images
         gen_imgs = generator(z)
@@ -171,11 +177,6 @@ for epoch in range(opt.n_epochs):
 
         d_loss.backward()
         optimizer_D.step()
-
-        # print(
-        #     "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-        #     % (epoch, opt.n_epochs, i, len(dataset), d_loss.item(), g_loss.item())
-        # )
 
     batches_done = epoch# * len(dataset) + i
     if (batches_done+1) % opt.sample_interval == 0:
