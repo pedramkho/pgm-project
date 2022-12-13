@@ -3,6 +3,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import seaborn
+import os
+
+def save_numpy_files(images, directory, file_name):
+
+    if not os.path.exists(directory):
+      os.makedirs(directory)
+
+    with open(os.path.join(directory, file_name), 'wb') as f:
+      np.save(f, images)  
+
 
 def plot_samples(samples, title, color='Greens'):
     xmax = 3

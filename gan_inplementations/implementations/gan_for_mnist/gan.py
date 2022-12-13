@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 import numpy as np
 import math
 
@@ -9,6 +10,8 @@ from torchvision.utils import save_image
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torch.autograd import Variable
+sys.path.insert(1, '/content/pgm-project')
+from utils import *
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -160,11 +163,8 @@ for epoch in range(opt.n_epochs):
         d_loss.backward()
         optimizer_D.step()
 
-        # print(
-        #     "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-        #     % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
-        # )
 
-        batches_done = epoch * len(dataloader) + i
-        if batches_done % opt.sample_interval == 0:
-            save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+    batches_done = epoch# * len(dataloader) + i
+    if (batches_done+1) % opt.sample_interval == 0:
+        save_numpy_files(gen_imgs.cpu().data.numpy().reshape(opt.batch_size, opt.img_size, opt.img_size), 'numpys/', str(batches_done)+'.npy')
+        save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
