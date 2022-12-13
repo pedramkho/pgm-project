@@ -6,7 +6,6 @@ import seaborn
 import os
 
 def save_numpy_files(images, directory, file_name):
-
     if not os.path.exists(directory):
       os.makedirs(directory)
 
@@ -100,4 +99,3 @@ def two_gaussians(mean_scale: float = 2.0, cov_scale: float = 0.02, sizes: list 
         dataset.extend(points)
     dataset = np.array(dataset)
     return dataset
-

@@ -161,10 +161,8 @@ for epoch in range(opt.n_epochs):
         d_loss = (real_loss + fake_loss) / 2
 
         d_loss.backward()
-        optimizer_D.step()
-
-
-    batches_done = epoch# * len(dataloader) + i
-    if (batches_done+1) % opt.sample_interval == 0:
+        optimizer_D.step()    
+    batches_done = epoch
+    if (batches_done) % opt.sample_interval == 0:
         save_numpy_files(gen_imgs.cpu().data.numpy().reshape(opt.batch_size, opt.img_size, opt.img_size), 'numpys/', str(batches_done)+'.npy')
         save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
