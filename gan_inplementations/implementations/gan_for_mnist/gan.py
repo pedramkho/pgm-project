@@ -17,6 +17,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
+from tqdm import tqdm_notebook as tqdm
+
 os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
@@ -29,6 +31,7 @@ parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads 
 parser.add_argument("--latent_dim", type=int, default=100, help="dimensionality of the latent space")
 parser.add_argument("--img_size", type=int, default=28, help="size of each image dimension")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
+parser.add_argument("--tsne", type=int, default=5000, help="number of images for plotting")
 parser.add_argument("--sample_interval", type=int, default=400, help="interval betwen image samples")
 opt = parser.parse_args()
 print(opt)
@@ -121,7 +124,7 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 #  Training
 # ----------
 
-for epoch in range(opt.n_epochs):
+for epoch in tqdm(range(opt.n_epochs)):
     for i, (imgs, _) in enumerate(dataloader):
 
         # Adversarial ground truths
@@ -138,10 +141,13 @@ for epoch in range(opt.n_epochs):
         optimizer_G.zero_grad()
 
         # Sample noise as generator input
+        
         z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
+        z_tsne = Variable(Tensor(np.random.normal(0, 1, (opt.tsne, opt.latent_dim))))
 
         # Generate a batch of images
         gen_imgs = generator(z)
+        gen_imgs_tsne = generator(z_tsne)
 
         # Loss measures generator's ability to fool the discriminator
         g_loss = adversarial_loss(discriminator(gen_imgs), valid)
@@ -164,5 +170,5 @@ for epoch in range(opt.n_epochs):
         optimizer_D.step()    
     batches_done = epoch
     if (batches_done) % opt.sample_interval == 0:
-        save_numpy_files(gen_imgs.cpu().data.numpy().reshape(opt.batch_size, opt.img_size, opt.img_size), 'numpys/', str(batches_done)+'.npy')
+        save_numpy_files(gen_imgs_tsne.cpu().data.numpy().reshape(opt.batch_size, opt.img_size, opt.img_size), 'numpys/', str(batches_done)+'.npy')
         save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)

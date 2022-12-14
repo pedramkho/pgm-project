@@ -13,6 +13,15 @@ def save_numpy_files(images, directory, file_name):
       np.save(f, images)  
 
 
+def one_gaussian():
+    center = (0,0)
+    cov_matrix = [[1, 0.8],
+                  [0.8, 1]]
+
+    size = 8 * 256
+    return np.random.multivariate_normal(center, cov_matrix, size)
+
+
 def plot_samples(samples, title, color='Greens'):
     xmax = 3
     cols = len(samples)
