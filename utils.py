@@ -5,6 +5,7 @@ import seaborn as sns
 import seaborn
 import os
 
+
 def save_numpy_files(images, directory, file_name):
     if not os.path.exists(directory):
       os.makedirs(directory)
@@ -35,6 +36,33 @@ def plot_samples(samples, title, color='Greens'):
         ax2 = seaborn.kdeplot(samps[:, 0], samps[:, 1], shaded=True, cmap=color, n_levels=15, clip=[[-xmax,xmax]]*2)
         plt.xticks([])
         plt.yticks([])
+        
+    
+    # ax.set_ylabel('epochs')
+    plt.gcf().tight_layout()
+    plt.savefig(title+'.png', dpi=300)
+    plt.show()
+    plt.close()
+
+def plot_samples2(samples, title, color='Greens', scatter_color_name='green', sub_titles=None):
+    y_fig_size = 2
+    if sub_titles:
+      y_fig_size = 2.23
+    xmax = 5
+    cols = len(samples)
+    bg_color  = seaborn.color_palette(color, n_colors=256)[0]
+    plt.figure(figsize=(2*cols, y_fig_size))
+    for i, samps in enumerate(samples):
+        if i == 0:
+            ax = plt.subplot(1, cols, 1)
+        else:
+            plt.subplot(1, cols, i+1, sharex=ax, sharey=ax)
+        # ax2 = seaborn.kdeplot(samps[:, 0], samps[:, 1], shaded=True, cmap=color, n_levels=15, clip=[[-xmax,xmax]]*2, fill=False)
+        plt.scatter(samps[:, 0], samps[:, 1], alpha=0.5, color=scatter_color_name, edgecolor='white', s=40)
+        plt.xticks([])
+        plt.yticks([])
+        if sub_titles:
+          plt.title(sub_titles[i])
         
     
     # ax.set_ylabel('epochs')
