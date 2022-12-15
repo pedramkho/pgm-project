@@ -23,6 +23,34 @@ def one_gaussian():
     return np.random.multivariate_normal(center, cov_matrix, size)
 
 
+def grid_gaussians(mean_scale: float = 2., cov_scale: float = 0.02, size=3 * 265):    
+    centers = []
+    grid_dim = 3
+    move = (grid_dim - 1) / 2
+    for i in range(grid_dim):
+        for j in range(grid_dim):
+            # centers.append((i, j))
+            centers.append((i - move, j - move))
+
+
+    # Scale centers
+    centers = [(mean_scale * x, mean_scale * y) for x, y in centers]
+
+    # Define covariance matrices for 8 Gaussians
+    diagonal = np.array([[1, 0], [0, 1]]) * cov_scale
+    cov_matrices = [diagonal for _ in range(grid_dim * grid_dim)]
+
+    # Generate points
+    dataset = []
+    for i in range(grid_dim):
+        for j in range(grid_dim):
+            index = i*grid_dim + j
+            points = np.random.multivariate_normal((centers[index]), cov_matrices[index], size)
+            dataset.extend(points)
+    dataset = np.array(dataset)
+    return dataset
+
+
 def plot_samples(samples, title, color='Greens'):
     xmax = 3
     cols = len(samples)
